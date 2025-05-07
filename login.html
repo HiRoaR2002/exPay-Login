@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Figma Plugin Login</title>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+</head>
+
+<body>
+  <h2>Login to Figma Plugin</h2>
+  <button onclick="signIn()">Sign in with Google</button>
+
+  <script>
+    // ✅ Replace with your actual config
+    const firebaseConfig = {
+      apiKey: "AIzaSyDF4NqZN3eum_IDcjoyvA6nAQiwJymb9bw",
+      authDomain: "expay-2002.firebaseapp.com",
+      projectId: "expay-2002",
+      storageBucket: "expay-2002.appspot.com",
+      messagingSenderId: "747297767045",
+      appId: "project-747297767045"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    function signIn() {
+      const provider = new firebase.auth.GoogleAuthProvider();
+      auth.signInWithPopup(provider)
+        .then(async (result) => {
+          const user = result.user;
+
+          // Save user to Firestore
+          await db.collection("users").doc(user.email).set({
+            email: user.email,
+            name: user.displayName,
+            lastLogin: new Date(),
+          }, { merge: true });
+
+          // Send user info back to parent
+          window.opener.postMessage({
+            type: 'firebase-login-success',
+            user: {
+              uid: user.uid,
+              email: user.email,
+              name: user.displayName,
+            }
+          }, '*');
+          window.close();
+        })
+        .catch((error) => {
+          alert('Login failed: ' + error.message);
+        });
+    }
+  </script>
+</body>
+
+</html>
