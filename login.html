@@ -21,6 +21,10 @@
       font-size: 16px;
       cursor: pointer;
       margin: 10px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 5px;
     }
 
     #status {
@@ -36,6 +40,7 @@
       border-left-color: #09f;
       animation: spin 1s linear infinite;
       margin: 20px auto;
+      display: none;
     }
 
     @keyframes spin {
@@ -54,7 +59,7 @@
   <h2>Login to Figma Plugin</h2>
   <div id="status">Please sign in with your Google account</div>
   <button onclick="signIn()">Sign in with Google</button>
-  <div id="loading" class="spinner" style="display: none;"></div>
+  <div id="loading" class="spinner"></div>
 
   <script>
     const firebaseConfig = {
@@ -80,25 +85,34 @@
           const user = result.user;
           document.getElementById('status').textContent = 'Saving your details...';
 
-          await db.collection("users").doc(user.email).set({
-            email: user.email,
-            name: user.displayName,
-            lastLogin: new Date(),
-          }, { merge: true });
+          try {
+            // Store user details in Firestore
+            await db.collection("users").doc(user.email).set({
+              email: user.email,
+              name: user.displayName,
+              lastLogin: new Date(),
+            }, { merge: true });
 
-          if (window.opener) {
-            window.opener.postMessage({
-              type: 'firebase-login-success',
-              user: {
-                uid: user.uid,
-                email: user.email,
-                name: user.displayName,
-              }
-            }, '*');
-          } else {
-            document.getElementById('status').textContent = 'Login succeeded, but no parent window to notify.';
+            // Send user data back to the opener (parent window)
+            if (window.opener) {
+              window.opener.postMessage({
+                type: 'firebase-login-success',
+                user: {
+                  uid: user.uid,
+                  email: user.email,
+                  name: user.displayName,
+                }
+              }, '*');
+            } else {
+              document.getElementById('status').textContent = 'Login succeeded, but no parent window to notify.';
+            }
+
+            // Close the login window after successful login
+            window.close();
+
+          } catch (error) {
+            document.getElementById('status').textContent = 'Error saving user data: ' + error.message;
           }
-          window.close();
         })
         .catch((error) => {
           document.getElementById('loading').style.display = 'none';
