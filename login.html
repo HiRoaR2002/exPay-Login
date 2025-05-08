@@ -61,10 +61,10 @@
                 name: user.displayName,
               }
             }, '*');
-            window.close();
           } else {
             alert('Login succeeded, but no parent window to notify.');
           }
+          window.close();
         })
         .catch((error) => {
           alert('Login failed: ' + error.message);
