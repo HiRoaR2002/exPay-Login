@@ -7,15 +7,54 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      padding: 20px;
+    }
+
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+      margin: 10px;
+    }
+
+    #status {
+      margin: 20px;
+      min-height: 20px;
+    }
+
+    .spinner {
+      border: 4px solid rgba(0, 0, 0, 0.1);
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border-left-color: #09f;
+      animation: spin 1s linear infinite;
+      margin: 20px auto;
+    }
+
+    @keyframes spin {
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+  </style>
 </head>
 
 <body>
   <h2>Login to Figma Plugin</h2>
+  <div id="status">Please sign in with your Google account</div>
   <button onclick="signIn()">Sign in with Google</button>
+  <div id="loading" class="spinner" style="display: none;"></div>
 
   <script>
-
-    // ✅ Replace with your actual config
     const firebaseConfig = {
       apiKey: "AIzaSyDF4NqZN3eum_IDcjoyvA6nAQiwJymb9bw",
       authDomain: "expay-2002.firebaseapp.com",
@@ -30,28 +69,21 @@
     const db = firebase.firestore();
 
     function signIn() {
+      document.getElementById('loading').style.display = 'block';
+      document.getElementById('status').textContent = 'Opening Google sign-in...';
+
       const provider = new firebase.auth.GoogleAuthProvider();
       auth.signInWithPopup(provider)
         .then(async (result) => {
           const user = result.user;
+          document.getElementById('status').textContent = 'Saving your details...';
 
-          // Save user to Firestore
           await db.collection("users").doc(user.email).set({
             email: user.email,
             name: user.displayName,
             lastLogin: new Date(),
           }, { merge: true });
 
-          // Send user info back to parent
-          // window.opener.postMessage({
-          //   type: 'firebase-login-success',
-          //   user: {
-          //     uid: user.uid,
-          //     email: user.email,
-          //     name: user.displayName,
-          //   }
-          // }, '*');
-          // window.close();
           if (window.opener) {
             window.opener.postMessage({
               type: 'firebase-login-success',
@@ -62,12 +94,15 @@
               }
             }, '*');
           } else {
-            alert('Login succeeded, but no parent window to notify.');
+            document.getElementById('status').textContent = 'Login succeeded, but no parent window to notify.';
           }
           window.close();
         })
         .catch((error) => {
-          alert('Login failed: ' + error.message);
+          document.getElementById('loading').style.display = 'none';
+          if (error.code !== 'auth/popup-closed-by-user') {
+            document.getElementById('status').textContent = 'Login failed: ' + error.message;
+          }
         });
     }
   </script>
