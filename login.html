@@ -43,6 +43,8 @@
           }, { merge: true });
 
           if (window.opener) {
+            console.log("opened window");
+
             window.opener.postMessage({
               type: 'firebase-login-success',
               user: {
