@@ -14,6 +14,8 @@
   <button onclick="signIn()">Sign in with Google</button>
 
   <script>
+
+    // ✅ Replace with your actual config
     const firebaseConfig = {
       apiKey: "AIzaSyDF4NqZN3eum_IDcjoyvA6nAQiwJymb9bw",
       authDomain: "expay-2002.firebaseapp.com",
@@ -27,23 +29,29 @@
     const auth = firebase.auth();
     const db = firebase.firestore();
 
-    async function signIn() {
+    function signIn() {
       const provider = new firebase.auth.GoogleAuthProvider();
-      auth.signInWithRedirect(provider);
-    }
-
-    // Handle redirect result
-    auth.getRedirectResult()
-      .then(async (result) => {
-        if (result.user) {
+      auth.signInWithPopup(provider)
+        .then(async (result) => {
           const user = result.user;
 
+          // Save user to Firestore
           await db.collection("users").doc(user.email).set({
             email: user.email,
             name: user.displayName,
             lastLogin: new Date(),
           }, { merge: true });
 
+          // Send user info back to parent
+          // window.opener.postMessage({
+          //   type: 'firebase-login-success',
+          //   user: {
+          //     uid: user.uid,
+          //     email: user.email,
+          //     name: user.displayName,
+          //   }
+          // }, '*');
+          // window.close();
           if (window.opener) {
             window.opener.postMessage({
               type: 'firebase-login-success',
@@ -53,16 +61,15 @@
                 name: user.displayName,
               }
             }, '*');
-            window.opener.postMessage({ type: 'firebase-login-complete' }, '*');
             window.close();
           } else {
             alert('Login succeeded, but no parent window to notify.');
           }
-        }
-      })
-      .catch((error) => {
-        alert('Login failed: ' + error.message);
-      });
+        })
+        .catch((error) => {
+          alert('Login failed: ' + error.message);
+        });
+    }
   </script>
 </body>
 
