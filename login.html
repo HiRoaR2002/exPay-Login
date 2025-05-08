@@ -14,8 +14,6 @@
   <button onclick="signIn()">Sign in with Google</button>
 
   <script>
-
-    // ✅ Replace with your actual config
     const firebaseConfig = {
       apiKey: "AIzaSyDF4NqZN3eum_IDcjoyvA6nAQiwJymb9bw",
       authDomain: "expay-2002.firebaseapp.com",
@@ -29,13 +27,17 @@
     const auth = firebase.auth();
     const db = firebase.firestore();
 
-    function signIn() {
+    async function signIn() {
       const provider = new firebase.auth.GoogleAuthProvider();
-      auth.signInWithPopup(provider)
-        .then(async (result) => {
+      auth.signInWithRedirect(provider);
+    }
+
+    // Handle redirect result
+    auth.getRedirectResult()
+      .then(async (result) => {
+        if (result.user) {
           const user = result.user;
 
-          // Save user to Firestore
           await db.collection("users").doc(user.email).set({
             email: user.email,
             name: user.displayName,
@@ -43,8 +45,6 @@
           }, { merge: true });
 
           if (window.opener) {
-            console.log("opened window");
-
             window.opener.postMessage({
               type: 'firebase-login-success',
               user: {
@@ -58,11 +58,11 @@
           } else {
             alert('Login succeeded, but no parent window to notify.');
           }
-        })
-        .catch((error) => {
-          alert('Login failed: ' + error.message);
-        });
-    }
+        }
+      })
+      .catch((error) => {
+        alert('Login failed: ' + error.message);
+      });
   </script>
 </body>
 
