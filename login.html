@@ -2,125 +2,43 @@
 <html>
 
 <head>
-  <meta charset="UTF-8" />
-  <title>Figma Plugin Login</title>
-  <meta http-equiv="Cross-Origin-Opener-Policy" content="same-origin" />
-  <meta http-equiv="Cross-Origin-Embedder-Policy" content="require-corp" />
+  <title>Login</title>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-  <style>
-    body {
-      font-family: sans-serif;
-      text-align: center;
-      padding: 20px;
-    }
-
-    button {
-      padding: 10px 20px;
-      font-size: 16px;
-      cursor: pointer;
-      margin: 10px;
-      background-color: #4CAF50;
-      color: white;
-      border: none;
-      border-radius: 5px;
-    }
-
-    #status {
-      margin: 20px;
-      min-height: 20px;
-    }
-
-    .spinner {
-      border: 4px solid rgba(0, 0, 0, 0.1);
-      width: 36px;
-      height: 36px;
-      border-radius: 50%;
-      border-left-color: #09f;
-      animation: spin 1s linear infinite;
-      margin: 20px auto;
-      display: none;
-    }
-
-    @keyframes spin {
-      0% {
-        transform: rotate(0deg);
-      }
-
-      100% {
-        transform: rotate(360deg);
-      }
-    }
-  </style>
 </head>
 
 <body>
-  <h2>Login to Figma Plugin</h2>
-  <div id="status">Please sign in with your Google account</div>
-  <button onclick="signIn()">Sign in with Google</button>
-  <div id="loading" class="spinner"></div>
-
+  <h2>Signing you in...</h2>
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyDF4NqZN3eum_IDcjoyvA6nAQiwJymb9bw",
       authDomain: "expay-2002.firebaseapp.com",
-      projectId: "expay-2002",
-      storageBucket: "expay-2002.appspot.com",
-      messagingSenderId: "747297767045",
-      appId: "project-747297767045"
+      projectId: "expay-2002"
     };
-
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
-    const db = firebase.firestore();
 
-    function signIn() {
-      document.getElementById('loading').style.display = 'block';
-      document.getElementById('status').textContent = 'Opening Google sign-in...';
+    auth.signInWithPopup(new firebase.auth.GoogleAuthProvider())
+      .then(async (result) => {
+        const token = await result.user.getIdToken();
 
-      const provider = new firebase.auth.GoogleAuthProvider();
-      auth.signInWithPopup(provider)
-        .then(async (result) => {
-          const user = result.user;
-          document.getElementById('status').textContent = 'Saving your details...';
-
-          try {
-            // Store user details in Firestore
-            await db.collection("users").doc(user.email).set({
-              email: user.email,
-              name: user.displayName,
-              lastLogin: new Date(),
-            }, { merge: true });
-
-            // Send user data back to the opener (parent window)
-            if (window.opener) {
-              window.opener.postMessage({
-                type: 'firebase-login-success',
-                user: {
-                  uid: user.uid,
-                  email: user.email,
-                  name: user.displayName,
-                }
-              }, '*');
-            } else {
-              document.getElementById('status').textContent = 'Login succeeded, but no parent window to notify.';
+        // Send token back to opener (plugin UI)
+        if (window.opener) {
+          window.opener.postMessage({
+            pluginMessage: {
+              type: 'auth-token',
+              token: token
             }
-
-            // Close the login window after successful login
-            window.close();
-
-          } catch (error) {
-            document.getElementById('status').textContent = 'Error saving user data: ' + error.message;
-          }
-        })
-        .catch((error) => {
-          document.getElementById('loading').style.display = 'none';
-          if (error.code !== 'auth/popup-closed-by-user') {
-            document.getElementById('status').textContent = 'Login failed: ' + error.message;
-          }
-        });
-    }
+          }, '*');
+          window.close();
+        } else {
+          document.body.innerHTML = "No opener found. Please return to the plugin.";
+        }
+      })
+      .catch(error => {
+        console.error("Login failed:", error);
+        document.body.innerHTML = "Login failed: " + error.message;
+      });
   </script>
 </body>
 
