@@ -1,3 +1,4 @@
+You said:
 <!DOCTYPE html>
 <html>
 
@@ -14,6 +15,7 @@
   <button onclick="signIn()">Sign in with Google</button>
 
   <script>
+
     // ✅ Replace with your actual config
     const firebaseConfig = {
       apiKey: "AIzaSyDF4NqZN3eum_IDcjoyvA6nAQiwJymb9bw",
@@ -42,15 +44,28 @@
           }, { merge: true });
 
           // Send user info back to parent
-          window.opener.postMessage({
-            type: 'firebase-login-success',
-            user: {
-              uid: user.uid,
-              email: user.email,
-              name: user.displayName,
-            }
-          }, '*');
-          window.close();
+          // window.opener.postMessage({
+          //   type: 'firebase-login-success',
+          //   user: {
+          //     uid: user.uid,
+          //     email: user.email,
+          //     name: user.displayName,
+          //   }
+          // }, '*');
+          // window.close();
+          if (window.opener) {
+            window.opener.postMessage({
+              type: 'firebase-login-success',
+              user: {
+                uid: user.uid,
+                email: user.email,
+                name: user.displayName,
+              }
+            }, '*');
+            window.close();
+          } else {
+            alert('Login succeeded, but no parent window to notify.');
+          }
         })
         .catch((error) => {
           alert('Login failed: ' + error.message);
