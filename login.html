@@ -8,7 +8,7 @@
 </head>
 
 <body>
-  <h2>Signing you in...</h2>
+  <h2>Logging in...</h2>
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyDF4NqZN3eum_IDcjoyvA6nAQiwJymb9bw",
@@ -22,17 +22,24 @@
       .then(async (result) => {
         const token = await result.user.getIdToken();
 
-        // Send token back to opener (plugin UI)
-        if (window.opener) {
-          window.opener.postMessage({
-            pluginMessage: {
-              type: 'auth-token',
-              token: token
-            }
-          }, '*');
-          window.close();
-        } else {
-          document.body.innerHTML = "No opener found. Please return to the plugin.";
+        // Try to send back to plugin
+        try {
+          if (window.opener) {
+            window.opener.postMessage({
+              pluginMessage: {
+                type: 'auth-token',
+                token
+              }
+            }, '*');
+            console.log("Token sent to opener.");
+            window.close();
+          } else {
+            console.warn("No opener found.");
+            document.body.innerHTML = "Login complete, but we couldn't notify the plugin. Please close this window.";
+          }
+        } catch (err) {
+          console.error("Error sending message back to opener:", err);
+          document.body.innerHTML = "Login successful, but couldn't send data back.";
         }
       })
       .catch(error => {
